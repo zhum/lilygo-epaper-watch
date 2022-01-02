@@ -6,7 +6,7 @@
 #include <GxDEPG0150BN/GxDEPG0150BN.h>
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
-#include "IMG.h"
+//#include "IMG.h"
 #include <NTPClient.h>
 #include <WiFi.h>
 #include "driver/adc.h"
@@ -33,7 +33,7 @@ GxEPD_Class display(io, /*RST=*/17, /*BUSY=*/16);
 
 ESP32Time tm;
 
-void debug(const char text){
+void debug(const char *text){
 #ifdef DEBUG
   Serial.println(text);
 #endif
@@ -189,30 +189,32 @@ void setModemSleep() {
 }
  
 void enableWiFi(){
-    adc_power_on();
-    delay(200);
+  char IP[] = "xxx.xxx.xxx.xxx";          // buffer
+  adc_power_on();
+  delay(200);
  
-    WiFi.disconnect(false);  // Reconnect the network
-    WiFi.mode(WIFI_STA);    // Switch WiFi off
+  WiFi.disconnect(false);  // Reconnect the network
+  WiFi.mode(WIFI_STA);    // Switch WiFi off
  
-    delay(200);
+  delay(200);
  
-    debug("START WIFI");
-    WiFi.begin(ssid, password);
-    WiFi.persistent(false);
-    WiFi.setAutoConnect(false);
-    WiFi.setAutoReconnect(true);
-    WiFi.setTxPower(WIFI_POWER_2dBm);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
+  debug("START WIFI");
+  WiFi.begin(ssid, password);
+  WiFi.persistent(false);
+  WiFi.setAutoConnect(false);
+  WiFi.setAutoReconnect(true);
+  WiFi.setTxPower(WIFI_POWER_2dBm);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
  
-    debug("");
-    debug("WiFi connected:");
-    debug(WiFi.localIP());
+  debug("");
+  debug("WiFi connected:");
+  WiFi.localIP().toString().toCharArray(IP, 16);
+  debug(IP);
     
-    timeClient.begin();
+  timeClient.begin();
 }
  
 void wakeModemSleep() {
