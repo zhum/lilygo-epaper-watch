@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <ESP32Time.h>
 
 #include <GxEPD.h>
@@ -8,6 +10,8 @@
 #include <NTPClient.h>
 #include <WiFi.h>
 #include "driver/adc.h"
+
+#include "variables.h"
 
 #define PIN_MOTOR 4
 #define PIN_KEY 35
@@ -23,24 +27,20 @@
 #define EPD_BUSY 16
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "1.ru.pool.ntp.org", 60 * 60 * 3, 30 * 60 * 1000);
+NTPClient timeClient(ntpUDP, ntp_server, time_shift, time_interval);
 GxIO_Class io(SPI, /*CS=5*/ 15, /*DC=*/2, /*RST=*/17);
 GxEPD_Class display(io, /*RST=*/17, /*BUSY=*/16);
 
 ESP32Time tm;
 
-const char *ssid = "SSID";      //"your ssid";
-const char *password = "password"; //"your password";
+void debug(const char text){
+#ifdef DEBUG
+  Serial.println(text);
+#endif
+}
 
 #define MAX_STRING_SIZE 64
 static char sprint_buf[MAX_STRING_SIZE];
-
-#define uS_TO_S_FACTOR 1000000 /* коэффициент пересчета
-                                  микросекунд в секунды */
-#define TIME_TO_SLEEP 10       /* время, в течение которого
-                                  будет спать ESP32 (в секундах) */
-
-#define MAX_DELAY 300          /* интервал между обращениями к NTP (сек)*/
 
 const char *myprintf(const char *format, ...) {
     va_list args;
@@ -57,17 +57,11 @@ void print_wakeup_reason(){
   switch(wakeup_reason)
   {
     case 1  : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-                         //  "Пробуждение от внешнего сигнала с помощью RTC_IO"
     case 2  : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-                         //  "Пробуждение от внешнего сигнала с помощью RTC_CNTL"  
     case 3  : Serial.println("Wakeup caused by timer"); break;
-                         //  "Пробуждение от таймера"
     case 4  : Serial.println("Wakeup caused by touchpad"); break;
-                         //  "Пробуждение от сенсорного контакта"
     case 5  : Serial.println("Wakeup caused by ULP program"); break;
-                         //  "Пробуждение от ULP-программы"
     default : Serial.println("Wakeup was not caused by deep sleep"); break;
-                         //  "Пробуждение не связано с режимом глубокого сна"
   }
 }
 
@@ -115,7 +109,7 @@ bool ntp_update(){
   long new_time;
   
   wakeModemSleep();
-  Serial.println("no sleep...");
+  debug("no sleep...");
 
   if(WiFi.status() != WL_CONNECTED){
     Serial.print("not connectd...");
@@ -125,9 +119,9 @@ bool ntp_update(){
   new_time = timeClient.getEpochTime();
   tm.setTime(new_time);
   
-  Serial.println("sleep...");
+  debug("sleep...");
   setModemSleep();
-  Serial.println("yea, sleep...");
+  debug("yea, sleep...");
   return true;
 }
 
@@ -145,7 +139,7 @@ void update_image(){
     display.updateWindow(0, 100, 200, 36);
     delay(1000);
     display.powerDown();
-    Serial.println("time printed");
+    debug("time printed");
     old_hour = new_hour;
     old_minute = new_minute;
   }
@@ -176,14 +170,14 @@ void disableWiFi(){
     adc_power_off();
     WiFi.disconnect(true);  // Disconnect from the network
     WiFi.mode(WIFI_OFF);    // Switch WiFi off
-    Serial.println("");
-    Serial.println("WiFi disconnected!");
+    debug("");
+    debug("WiFi disconnected!");
 }
 void disableBluetooth(){
     // Quite unusefully, no relevable power consumption
     btStop();
-    Serial.println("");
-    Serial.println("Bluetooth stop!");
+    debug("");
+    debug("Bluetooth stop!");
 }
  
 void setModemSleep() {
@@ -203,7 +197,7 @@ void enableWiFi(){
  
     delay(200);
  
-    Serial.println("START WIFI");
+    debug("START WIFI");
     WiFi.begin(ssid, password);
     WiFi.persistent(false);
     WiFi.setAutoConnect(false);
@@ -214,9 +208,9 @@ void enableWiFi(){
         Serial.print(".");
     }
  
-    Serial.println("");
-    Serial.print("WiFi connected: ");
-    Serial.println(WiFi.localIP());
+    debug("");
+    debug("WiFi connected:");
+    debug(WiFi.localIP());
     
     timeClient.begin();
 }
