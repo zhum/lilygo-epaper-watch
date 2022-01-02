@@ -29,8 +29,8 @@ GxEPD_Class display(io, /*RST=*/17, /*BUSY=*/16);
 
 ESP32Time tm;
 
-const char *ssid = "ZS";      //"your ssid";
-const char *password = "close-open"; //"your password";
+const char *ssid = "SSID";      //"your ssid";
+const char *password = "password"; //"your password";
 
 #define MAX_STRING_SIZE 64
 static char sprint_buf[MAX_STRING_SIZE];
